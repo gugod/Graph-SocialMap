@@ -16,7 +16,7 @@ Graph::SocialMap - Easy tool to create social map
     };
 
     # Generate a Graph::SocialMap object.
-    my $gsm = sm(relation => $relation) ;
+    my $gsm = sm(-relation => $relation) ;
 
     # Type 1 SocialMap (Graph::Direct object)
     my $graph_type1 = $gsm->type1;
@@ -71,18 +71,15 @@ and Joan are connected to each other with degree of seperation 2.
 
 =cut
 
-use strict;
-use warnings;
-use Spiffy qw(-Base field spiffy_constructor);
-our @EXPORT = qw(sm);
-our $VERSION = '0.08';
+use Spiffy 0.21 qw(-Base field);
 use Graph;
-
-spiffy_constructor('sm');
+our @EXPORT = qw(sm);
+our $VERSION = '0.09';
 
 sub paired_arguments {qw(-relation -file -format)}
 
 field relation => {};
+field issues   => [];
 field people   => [];
 
 # weight of person: number of occurences of a person in whole relation.
@@ -107,24 +104,23 @@ field epsilon   => 1;
 field concentrate => 'true';
 field ratio => 'auto';
 
+sub sm { 
+    my $new = bless {};
+    $new->init($self,@_);
+}
+
 sub new {
-    my($args,@others) = $self->parse_arguments(@_);
-    $self->relation($args->{-relation}) if $args->{-relation};
-    while (@others) {
-        my $method = shift @others;
-        $self->$method(shift @others);
-    }
-    $self->init;
+    bless {},$self;
+    $self->init(@_);
 }
 
 sub init {
+    my($args,@others) = $self->parse_arguments(@_);
+    $self->relation($args->{-relation});
+    $self->issues([keys %{$args->{-relation}}]);
     $self->init_people;
     $self->init_graph;
     return $self;
-}
-
-sub issues {
-    [keys %{$self->relation}];
 }
 
 sub init_people {
@@ -262,17 +258,6 @@ sub pairs {
 }
 
 1;
-
-=head1 Major ChangeLog
-
-=over 4
-
-=item 0.08
-
-This version take advantage of new spiffy parameters,you may
-call C<sm(relation => $r)> instead of using -relation.
-
-=back
 
 =head1 COPYRIGHT
 

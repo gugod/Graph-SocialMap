@@ -1,11 +1,11 @@
 name: Graph-SocialMap
-version: 0.08
+version: 0.09
 abstract: Easy way to create social map.
 author: Kang-min Liu (gugod@gugod.org)
 license: perl
 distribution_type: module
 requires:
-  Spiffy: 0.19
+  Spiffy: 0.21
   Graph: 0
   Graph::Writer::GraphViz: 0.03
 no_index:

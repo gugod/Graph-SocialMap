@@ -15,6 +15,5 @@ t/1.simple.t
 t/2.sub.t
 t/3.graph.t
 t/3.graph.type3.t
-t/3.spiffy-graph.t
 t/4.graph-png.t
 t/graph.png

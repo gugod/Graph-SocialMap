@@ -6,7 +6,7 @@ abstract        ('Easy way to create social map.');
 author          ('Kang-min Liu (gugod@gugod.org)');
 license         ('perl');
 version_from    ('lib/Graph/SocialMap.pm');
-requires        ('Spiffy' => 0.19);
+requires        ('Spiffy' => 0.21);
 requires        ('Graph');
 requires        ('Graph::Writer::GraphViz' => 0.03);
 
