@@ -4,12 +4,65 @@ package Graph::SocialMap;
 
 Graph::SocialMap - Easy tool to create social map
 
+=head1 SYNOPSIS
+
+    # The Structure of relationship
+    my $relation = {
+        1357 => [qw/Marry Rose/],
+        3579 => [qw/Marry Peacock/],
+        2468 => [qw/Joan/],
+        4680 => [qw/Rose Joan/],
+        OSSF => [qw/Gugod Autrijus/],
+    };
+
+    # Allocate a graph and then save it as png.
+    my $gsm = sm(-relation => $relation) ;
+    $gsm->save(-format=> 'png',-file=> '/tmp/graph.png');
+
+    # Weight of person (equal to the number of occurence)
+    # Should be 2
+    print $gsm->wop->{Rose};
+
+    # Degree of seperation
+    # Should be 2 (Marry -> Rose -> Joan)
+    print $gsm->dos('Marry','Joan');
+    # Should be less then zero (Unreachable)
+    print $gsm->dos('Gugod','Marry');
+
+=head1 DESCRIPTION
+
+This module implement a interesting graph application that is called
+the 'Social Relation Map'. It provides object-oriented way to retrieve
+many social information that can be found in this map.
+
+This module export a method 'sm' that return a B<Graph::SocialGraph>
+object. It accepts one argument in the for of 'hashref of arrayref'.
+The key to this hash is the name of relation, and the value
+of the hash is a list of identities involved in this relation.
+
+Take the synopsis for an example, the structure:
+
+    my $relation = {
+        1357 => [qw/Marry Rose/],
+        3579 => [qw/Marry Peacock/],
+        2468 => [qw/Joan/],
+        4680 => [qw/Rose Joan/],
+        OSSF => [qw/Gugod Autrijus/],
+    };
+
+Defines 6 relations which have common people involves in, the relation
+'1234' involves Marry and Rose, and the relation '3579' involves Marry
+and Peacock. By this 2 relations, we say that Marry is directly
+connected to Rose and Peacock, and Rose and Peacock are connected to
+each other indirectly, with degree of seperation 1. Likewise, Marry
+and Joan are connected to each other with degree of seperation 2.
+
 =cut
 
 use strict;
 use Spiffy '-Base';
 our @EXPORT = qw(sm);
-
+our $VERSION = '0.03';
 use Graph;
 use Graph::Undirected;
 use Graph::Writer::GraphViz;
@@ -26,6 +79,11 @@ field wop   => {};
 # under lying Graph::Undirected object
 field 'graph';
 field 'graph_apsp';
+
+# graphviz parameters
+field layout    => 'twopi';
+field ranksep   => 1.5;
+field fontsize  => 8;
 
 sub new {
     bless [],$self;
@@ -51,7 +109,7 @@ sub init_people {
 	$p->{$_}++ for @{$self->relation->{$_}};
     }
     $self->wop($p);
-    $self->people(keys %$p);
+    $self->people([keys %$p]);
 }
 
 sub init_graph {
@@ -60,13 +118,25 @@ sub init_graph {
 
     my $ug = Graph::Undirected->new;
     my $wg = Graph->new;
-    $ug->add_vertices($self->people);
-    $wg->add_vertices($self->people);
+    my $people = $self->people;
+
+    $wg->add_vertices(@$people);
     for my $i (@$isu) {
 	for my $e ($self->pairs(@{$rel->{$i}})) {
-	    $ug->add_edge(@$e);
 	    $wg->add_weighted_edge($e->[0],1,$e->[1]);
 	    $wg->add_weighted_edge($e->[1],1,$e->[0]);
+	}
+    }
+    $ug->add_vertices(@$people);
+    for my $i (@$people) {
+	$ug->set_attribute('shape',$i,'plaintext');
+    }
+
+    $ug->add_vertices(@$isu);
+    for my $i (@$isu) {
+	$ug->set_attribute('shape',$i,'box');
+	for my $p (@{$rel->{$i}}) {
+	    $ug->add_edge($p,$i);
 	}
     }
 
@@ -87,16 +157,28 @@ sub dos {
 # save current graph
 sub save {
     my $args = $self->parse_arguments(@_);
-    $self->save_as_png($args->{-file});
-    $self->save_as_dot($args->{-file});
+    my ($fmt,$file) = ($args->{'-format'}, $args->{'-file'});
+    $self->save_as($fmt,$file);
+}
+
+sub save_as {
+    my ($fmt,$file) = @_;
+    Graph::Writer::GraphViz->new(
+	-format => $fmt,
+	-layout => $self->layout,
+	-ranksep => $self->ranksep,
+	-fontsize => $self->fontsize,
+       )->write_graph(
+	   $self->graph,
+	   $file||'/tmp/graph.dot');
 }
 
 sub save_as_dot {
-    Graph::Writer::GraphViz->new(-format => 'dot')->write_graph($self->graph,shift||'/tmp/graph.dot');
+    $self->save_as('dot',shift);
 }
 
 sub save_as_png {
-    Graph::Writer::GraphViz->new(-format => 'png')->write_graph($self->graph,shift||'/tmp/graph.png');
+    $self->save_as('png',shift);
 }
 
 # return a list of all pairs.

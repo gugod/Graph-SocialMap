@@ -1,20 +1,14 @@
 
-use ExtUtils::MakeMaker;
+use inc::Module::Install;
 
-WriteMakefile(
-    AUTHOR              => 'Kang-min Liu (gugod@gugod.org)',
-    ABSTRACT            => 'Easy way to create social map',
-    NAME                => 'Graph::SocialMap',
-    VERSION             => '0.01_1',
-    DISTNAME            => 'Graph-SocialMap',
-    PREREQ_PM           => {
-        Spiffy   => 0.18,
-	GraphViz => 0,
-	Graph    => 0,
-	Graph::Writer    => 1.02,
-    },
-    dist                => {
-        COMPRESS        => 'gzip -9',
-        SUFFIX          => '.gz',
-    },
-);
+name            ('Graph-SocialMap');
+abstract        ('Easy way to create social map.');
+author          ('Kang-min Liu (gugod@gugod.org)');
+license         ('perl');
+version_from    ('lib/Graph/SocialMap.pm');
+requires        ('Spiffy' => 0.18);
+requires        ('Graph');
+requires        ('GraphViz');
+requires        ('Graph::Writer::GraphViz' => 0.03);
+
+&WriteAll;
