@@ -7,7 +7,10 @@ author          ('Kang-min Liu (gugod@gugod.org)');
 license         ('perl');
 version_from    ('lib/Graph/SocialMap.pm');
 requires        ('Spiffy' => 0.21);
-requires        ('Graph');
-requires        ('Graph::Writer::GraphViz' => 0.03);
+requires        ('Graph' => 0.54);
+requires        ('Graph::Writer::GraphViz' => 0.07);
+build_requires  ('YAML');
+build_requires  ('Test::More');
+build_requires  ('Test::Simple');
 
 &WriteAll;

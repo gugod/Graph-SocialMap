@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::Simple tests => 20;
+use Test::More qw(no_plan);
 use Graph::SocialMap;
 
 # Key:   relation name
@@ -20,9 +20,7 @@ my $relation = {
     OSSF => [qw/Gugod Autrijus/],
 };
 
-my $gsm = sm(
-    -relation => $relation
-   );
+my $gsm = sm(-relation => $relation);
 
 # wop = weight of person
 my $wop = $gsm->wop;
@@ -53,5 +51,4 @@ ok(3 == $gsm->dos('Peacock','Joan'));
 # Not connected
 ok(0 > $gsm->dos('Gugod','Marry'));
 ok(0 > $gsm->dos('Marry','Gugod'));
-
 
