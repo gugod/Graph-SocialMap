@@ -15,9 +15,18 @@ Graph::SocialMap - Easy tool to create social map
         OSSF => [qw/Gugod Autrijus/],
     };
 
-    # Allocate a graph and then save it as png.
+    # Generate a Graph::SocialMap object.
     my $gsm = sm(-relation => $relation) ;
-    $gsm->save(-format=> 'png',-file=> '/tmp/graph.png');
+
+    # Type 1 SocialMap (Graph::Direct object)
+    my $graph_type1 = $gsm->type1;
+
+    # Type 2 SocialMap (Graph::Direct object)
+    my $graph_type2 = $gsm->type2;
+
+    # Save it with Graph::Writer::* module
+    my $writer = Graph::Writer::DGF->new();
+    $writer->write_graph($graph_type1,'type1.dgf');
 
     # Weight of person (equal to the number of occurence)
     # Should be 2
@@ -66,10 +75,8 @@ use strict;
 use warnings;
 use Spiffy 0.19 qw(-Base field spiffy_constructor);
 our @EXPORT = qw(sm);
-our $VERSION = '0.05';
+our $VERSION = '0.07';
 use Graph;
-use Graph::Undirected;
-use Graph::Writer::GraphViz;
 
 spiffy_constructor('sm');
 
@@ -82,10 +89,11 @@ field people   => [];
 # weight of person: number of occurences of a person in whole relation.
 field wop   => {};
 
-# under lying Graph::Undirected object
-field 'graph';
+# under lying Graph::* object
+field 'type1';
+field 'type2';
+field '_type3';
 field 'graph_apsp';
-field 'graph_sm';
 
 # graphviz parameters
 field layout    => 'neato';
@@ -97,6 +105,8 @@ field arrowsize => 0.5;
 field fontsize  => 12;
 field ordering  => 'out';
 field epsilon   => 1;
+field concentrate => 'true';
+field ratio => 'auto';
 
 sub new {
     bless [],$self;
@@ -106,7 +116,7 @@ sub new {
 
 sub init {
     my($args,@others) = $self->parse_arguments(@_);
-    $self->relation($args->{-relation});
+ $self->relation($args->{-relation});
     $self->issues([keys %{$args->{-relation}}]);
 
     $self->init_people;
@@ -127,20 +137,22 @@ sub init_graph {
     my $rel = $self->relation;
     my $isu = $self->issues;
 
-#    my $ug = Graph::Undirected->new;
-    my $ug = Graph->new;
+    my $type1 = Graph->new;
+    my $type2 = Graph->new;
     my $wg = Graph->new;
-    my $smg = Graph->new;
     my $people = $self->people;
 
     $wg->add_vertices(@$people);
     for my $i (@$isu) {
 	for my $e ($self->pairs(@{$rel->{$i}})) {
-	    $wg->add_weighted_edge($e->[0],1,$e->[1]);
-	    $wg->add_weighted_edge($e->[1],1,$e->[0]);
-
-	    $smg->add_edge($e->[0],$e->[1]);
-	    $smg->add_edge($e->[1],$e->[0]);
+	    unless($wg->has_edge($e->[0],$e->[1])) {
+		$wg->add_weighted_edge($e->[0],1,$e->[1]);
+		$wg->add_weighted_edge($e->[1],1,$e->[0]);
+	    }
+	    unless($type2->has_edge($e->[0],$e->[1])) {
+		$type2->add_edge($e->[0],$e->[1]);
+		$type2->add_edge($e->[1],$e->[0]);
+	    }
 	}
     }
 
@@ -148,28 +160,65 @@ sub init_graph {
 	my $node_name = "People/$i";
 	my $label = "$i";
 
-	$ug->add_vertex($node_name);
-	$ug->set_attribute('shape',$node_name,'plaintext');
-	$ug->set_attribute('label',$node_name,$label);
+	$type1->add_vertex($node_name);
+	$type1->set_attribute('shape',$node_name,'plaintext');
+	$type1->set_attribute('label',$node_name,$label);
     }
 
     for my $i (@$isu) {
 	my $node_name = "Relation/$i";
 	my $label = "$i";
 
-	$ug->add_vertex($node_name);
-	$ug->set_attribute('shape',$node_name,'box');
-	$ug->set_attribute('label',$node_name,$label);
+	$type1->add_vertex($node_name);
+	$type1->set_attribute('shape',$node_name,'box');
+	$type1->set_attribute('label',$node_name,$label);
 
 	for my $p (@{$rel->{$i}}) {
-	    $ug->add_edge("People/$p",$node_name);
+	    $type1->add_edge("People/$p",$node_name);
 	}
     }
 
-    $self->graph($ug);
-    $self->graph_sm($smg);
+    $self->type1($type1);
+    $self->type2($type2);
     my $apsp = $wg->APSP_Floyd_Warshall;
     $self->graph_apsp($apsp);
+}
+
+# type3, directed people-to-people graph, in the given order
+sub type3 {
+    return $self->_type3 if ($self->_type3);
+    my $rel = $self->relation;
+    my $isu = $self->issues;
+    my $type3 = Graph->new;
+    my $people = $self->people;
+
+    $type3->add_vertices(@$people);
+    for my $i (@$isu) {
+	my @list = @{$rel->{$i}};
+	for my $i (0..$#list-1) {
+	    for my $j ($i+1..$#list) {
+		$type3->add_edge(@list[$j,$i])
+		    unless($type3->has_edge(@list[$j,$i]));
+	    }
+	}
+    }
+
+    $self->_type3($type3);
+    return $type3;
+}
+
+sub type3_adj_matrix {
+    my $g = $self->type3;
+    my @edges = $g->edges;
+    my $m = {};
+    while(@edges) {
+	my $e1 = shift @edges;
+	my $e2 = shift @edges;
+	if($g->has_edge($e1,$e2)) {
+	    $m->{$e1}->{$e2} = 1;
+	}
+    }
+    return $m;
 }
 
 # Degree of seperation of two people.
@@ -179,39 +228,6 @@ sub dos {
     my $w = $apsp->get_attribute('weight',$alice,$bob);
     $w = -1 if(!defined $w);
     return $w;
-}
-
-# save current graph
-sub save {
-    my $args = $self->parse_arguments(@_);
-    my ($fmt,$file) = ($args->{'-format'}, $args->{'-file'});
-    $self->save_as($fmt,$file);
-}
-
-sub save_as {
-    my ($fmt,$file) = @_;
-    Graph::Writer::GraphViz->new(
-	-format => $fmt,
-	-layout => $self->layout,
-	-rank => $self->rank,
-	-ranksep => $self->ranksep,
-	-fontsize => $self->fontsize,
-	-epslion  => $self->epsilon,
-	-ordering => $self->ordering,
-	-no_overlap  => $self->no_overlap,
-	-splines  => $self->splines,
-	-arrowsize => $self->arrowsize,
-       )->write_graph(
-	   $self->graph_sm,
-	   $file||'/tmp/graph.dot');
-}
-
-sub save_as_dot {
-    $self->save_as('dot',shift);
-}
-
-sub save_as_png {
-    $self->save_as('png',shift);
 }
 
 # retrurn all-pair dos

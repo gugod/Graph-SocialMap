@@ -1,7 +1,8 @@
 #!/usr/bin/perl
-
+use strict;
 use Test::Simple tests => 1;
 use Graph::SocialMap;
+use Graph::Writer::GraphViz;
 use IO::All;
 use YAML;
 
@@ -17,7 +18,7 @@ my $relation = {
 };
 
 my $gsm = sm(-relation => $relation);
-
-$gsm->save(-format=> 'png',-file=> '/tmp/graph.png');
-
+my $writer = Graph::Writer::GraphViz->new(-format=>'png');
+$writer->write_graph($gsm->type2,'/tmp/graph.png');
 ok( -f '/tmp/graph.png');
+unlink('/tmp/graph.png');

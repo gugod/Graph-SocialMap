@@ -24,8 +24,6 @@ my $gsm = sm(
     -relation => $relation
    );
 
-$gsm->save;
-
 # wop = weight of person
 my $wop = $gsm->wop;
 ok(1 == $wop->{Gugod});
