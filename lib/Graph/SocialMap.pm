@@ -16,7 +16,7 @@ Graph::SocialMap - Easy tool to create social map
     };
 
     # Generate a Graph::SocialMap object.
-    my $gsm = sm(-relation => $relation) ;
+    my $gsm = sm(relation => $relation) ;
 
     # Type 1 SocialMap (Graph::Direct object)
     my $graph_type1 = $gsm->type1;
@@ -73,9 +73,9 @@ and Joan are connected to each other with degree of seperation 2.
 
 use strict;
 use warnings;
-use Spiffy 0.19 qw(-Base field spiffy_constructor);
+use Spiffy qw(-Base field spiffy_constructor);
 our @EXPORT = qw(sm);
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 use Graph;
 
 spiffy_constructor('sm');
@@ -83,7 +83,6 @@ spiffy_constructor('sm');
 sub paired_arguments {qw(-relation -file -format)}
 
 field relation => {};
-field issues   => [];
 field people   => [];
 
 # weight of person: number of occurences of a person in whole relation.
@@ -109,18 +108,23 @@ field concentrate => 'true';
 field ratio => 'auto';
 
 sub new {
-    bless [],$self;
-    $self->init(@_);
-    return $self;
+    my($args,@others) = $self->parse_arguments(@_);
+    $self->relation($args->{-relation}) if $args->{-relation};
+    while (@others) {
+        my $method = shift @others;
+        $self->$method(shift @others);
+    }
+    $self->init;
 }
 
 sub init {
-    my($args,@others) = $self->parse_arguments(@_);
- $self->relation($args->{-relation});
-    $self->issues([keys %{$args->{-relation}}]);
-
     $self->init_people;
     $self->init_graph;
+    return $self;
+}
+
+sub issues {
+    [keys %{$self->relation}];
 }
 
 sub init_people {
@@ -131,6 +135,7 @@ sub init_people {
     }
     $self->wop($p);
     $self->people([keys %$p]);
+    return $self;
 }
 
 sub init_graph {
@@ -182,6 +187,7 @@ sub init_graph {
     $self->type2($type2);
     my $apsp = $wg->APSP_Floyd_Warshall;
     $self->graph_apsp($apsp);
+    return $self;
 }
 
 # type3, directed people-to-people graph, in the given order
@@ -256,6 +262,17 @@ sub pairs {
 }
 
 1;
+
+=head1 Major ChangeLog
+
+=over 4
+
+=item 0.08
+
+This version take advantage of new spiffy parameters,you may
+call C<sm(relation => $r)> instead of using -relation.
+
+=back
 
 =head1 COPYRIGHT
 
