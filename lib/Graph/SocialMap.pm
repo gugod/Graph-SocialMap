@@ -29,6 +29,9 @@ Graph::SocialMap - Easy tool to create social map
     # Should be less then zero (Unreachable)
     print $gsm->dos('Gugod','Marry');
 
+    # all-pair dos (hashref of hashref)
+    $gsm->all_dos;
+
 =head1 DESCRIPTION
 
 This module implement a interesting graph application that is called
@@ -60,12 +63,15 @@ and Joan are connected to each other with degree of seperation 2.
 =cut
 
 use strict;
-use Spiffy '-Base';
+use warnings;
+use Spiffy 0.19 qw(-Base field spiffy_constructor);
 our @EXPORT = qw(sm);
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 use Graph;
 use Graph::Undirected;
 use Graph::Writer::GraphViz;
+
+spiffy_constructor('sm');
 
 sub paired_arguments {qw(-relation -file -format)}
 
@@ -79,19 +85,24 @@ field wop   => {};
 # under lying Graph::Undirected object
 field 'graph';
 field 'graph_apsp';
+field 'graph_sm';
 
 # graphviz parameters
-field layout    => 'twopi';
+field layout    => 'neato';
+field rank      => 'same';
 field ranksep   => 1.5;
-field fontsize  => 8;
+field no_overlap => 0;
+field splines   => 'false';
+field arrowsize => 0.5;
+field fontsize  => 12;
+field ordering  => 'out';
+field epsilon   => 1;
 
 sub new {
     bless [],$self;
     $self->init(@_);
     return $self;
 }
-
-spiffy_constructor 'sm';
 
 sub init {
     my($args,@others) = $self->parse_arguments(@_);
@@ -116,8 +127,10 @@ sub init_graph {
     my $rel = $self->relation;
     my $isu = $self->issues;
 
-    my $ug = Graph::Undirected->new;
+#    my $ug = Graph::Undirected->new;
+    my $ug = Graph->new;
     my $wg = Graph->new;
+    my $smg = Graph->new;
     my $people = $self->people;
 
     $wg->add_vertices(@$people);
@@ -125,6 +138,9 @@ sub init_graph {
 	for my $e ($self->pairs(@{$rel->{$i}})) {
 	    $wg->add_weighted_edge($e->[0],1,$e->[1]);
 	    $wg->add_weighted_edge($e->[1],1,$e->[0]);
+
+	    $smg->add_edge($e->[0],$e->[1]);
+	    $smg->add_edge($e->[1],$e->[0]);
 	}
     }
 
@@ -151,6 +167,7 @@ sub init_graph {
     }
 
     $self->graph($ug);
+    $self->graph_sm($smg);
     my $apsp = $wg->APSP_Floyd_Warshall;
     $self->graph_apsp($apsp);
 }
@@ -176,10 +193,16 @@ sub save_as {
     Graph::Writer::GraphViz->new(
 	-format => $fmt,
 	-layout => $self->layout,
+	-rank => $self->rank,
 	-ranksep => $self->ranksep,
 	-fontsize => $self->fontsize,
+	-epslion  => $self->epsilon,
+	-ordering => $self->ordering,
+	-no_overlap  => $self->no_overlap,
+	-splines  => $self->splines,
+	-arrowsize => $self->arrowsize,
        )->write_graph(
-	   $self->graph,
+	   $self->graph_sm,
 	   $file||'/tmp/graph.dot');
 }
 
@@ -189,6 +212,18 @@ sub save_as_dot {
 
 sub save_as_png {
     $self->save_as('png',shift);
+}
+
+# retrurn all-pair dos
+sub all_dos {
+    my $people = $self->people;
+    my $d = {};
+    for my $alice (@$people) {
+	for my $bob (@$people) {
+	    $d->{$alice}->{$bob} = $self->dos($alice,$bob);
+	}
+    }
+    return $d;
 }
 
 # return a list of all pairs.
