@@ -1,0 +1,14 @@
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         Graph-SocialMap
+version:      0.01_1
+version_from: 
+installdirs:  site
+requires:
+    Graph:                         0
+    Graph::Writer:                 1.02
+    GraphViz:                      0
+    Spiffy:                        0.18
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.21
