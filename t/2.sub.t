@@ -12,7 +12,7 @@ my $relation = {
     OSSF => [qw/Gugod Autrijus/],
 };
 
-my $gsm = sm(-relation => $relation);
+my $gsm = Graph::SocialMap->new(relation => $relation);
 
 my (@p,$a,$b);
 

@@ -20,10 +20,11 @@ my $relation = {
     OSSF => [qw/Gugod Autrijus/],
 };
 
-my $gsm = sm(-relation => $relation);
+my $gsm = Graph::SocialMap->new(relation => $relation);
 
 # wop = weight of person
 my $wop = $gsm->wop;
+
 ok(1 == $wop->{Gugod});
 ok(1 == $wop->{Autrijus});
 ok(1 == $wop->{Peacock});

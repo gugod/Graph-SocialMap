@@ -17,7 +17,7 @@ my $relation = {
     RAND => [qw/A Tifa Peacock Joan Peacock/]
 };
 
-my $gsm = sm(-relation => $relation);
+my $gsm = Graph::SocialMap->new(relation => $relation);
 my $writer = Graph::Writer::GraphViz->new(-format=>'png');
 $writer->write_graph($gsm->type2,'/tmp/graph.png');
 ok( -f '/tmp/graph.png');

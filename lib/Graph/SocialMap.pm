@@ -1,23 +1,23 @@
 package Graph::SocialMap;
 use Spiffy 0.21 qw(-Base field);
 use Graph 0.54;
-our @EXPORT = qw(sm);
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 sub paired_arguments {qw(-relation -file -format)}
 
-field relation => {};
-field issues   => [];
-field people   => [];
+# Cached fields
+field '_relation';
+field '_issues';
+field '_people';
 
 # weight of person: number of occurences of a person in whole relation.
-field wop   => {};
+field '_wop';
 
 # under lying Graph::* object
-field 'type1';
-field 'type2';
+field '_type1';
+field '_type2';
 field '_type3';
-field 'graph_apsp';
+field '_apsp';
 
 # graphviz parameters
 field layout    => 'neato';
@@ -32,43 +32,51 @@ field epsilon   => 1;
 field concentrate => 'true';
 field ratio => 'auto';
 
-sub sm { 
-    my $new = bless {};
-    $new->init($self,@_);
+sub relation {
+    my $newval = shift;
+    if($newval) {
+        $self->_relation($newval);
+        $self->_people(undef);
+        $self->_issues(undef);
+        $self->_type1(undef);
+        $self->_type2(undef);
+        $self->_type3(undef);
+        $self->_apsp(undef);
+    }
+    return $self->_relation;
 }
 
-sub new {
-    bless {},$self;
-    $self->init(@_);
+sub issues {
+    return $self->_issues if $self->_issues;
+    my $issues = [keys %{$self->relation}];
+    $self->_issues($issues);
+    return $issues;
 }
 
-sub init {
-    my($args,@others) = $self->parse_arguments(@_);
-    $self->relation($args->{-relation});
-    $self->issues([keys %{$args->{-relation}}]);
-    $self->init_people;
-    $self->init_graph;
-    return $self;
-}
-
-sub init_people {
+sub people {
+    return $self->_people if ($self->_people);
     my $p={};
     my $r=$self->relation;
     for(keys %$r) {
-	$p->{$_}++ for @{$self->relation->{$_}};
+	$p->{$_}++ for @{$r->{$_}};
     }
-    $self->wop($p);
-    $self->people([keys %$p]);
-    return $self;
+    $self->_wop($p);
+    my $people = [keys %$p];
+    $self->_people($people);
+    return $people;
 }
 
-sub init_graph {
-    my $rel = $self->relation;
-    my $isu = $self->issues;
+sub wop {
+    return $self->_wop if $self->_wop;
+    $self->people;
+    $self->_wop;
+}
 
-    my $type1 = Graph->new;
+sub type2 {
+    return $self->_type2 if ($self->_type2);
+    my $isu = $self->issues;
+    my $rel = $self->relation;
     my $type2 = Graph->new;
-    my $people = $self->people;
 
     for my $i (@$isu) {
 	for my $e ($self->pairs(@{$rel->{$i}})) {
@@ -78,9 +86,23 @@ sub init_graph {
 	    }
 	}
     }
+    $self->_type2($type2);
+    return $type2;
+}
 
-    my $apsp = $type2->APSP_Floyd_Warshall;
-    $self->graph_apsp($apsp);
+sub apsp {
+    return $self->_apsp if($self->_apsp);
+    my $a = $self->type2->APSP_Floyd_Warshall;
+    $self->_apsp($a);
+    return $a;
+}
+
+sub type1 {
+    return $self->_type1 if ($self->_type1);
+    my $type1 = Graph->new;
+    my $people = $self->people;
+    my $isu = $self->issues;
+    my $rel = $self->relation;
 
     for my $i (@$people) {
 	my $node_name = "People/$i";
@@ -92,7 +114,7 @@ sub init_graph {
     }
 
     for my $i (@$isu) {
-	my $node_name = "Relation/$i";
+	my $node_name = "Relation $i";
 	my $label = "$i";
 
 	$type1->add_vertex($node_name);
@@ -100,13 +122,12 @@ sub init_graph {
         $type1->set_vertex_attribute($node_name, label => $label);
 
 	for my $p (@{$rel->{$i}}) {
-	    $type1->add_edge("People/$p",$node_name);
+	    $type1->add_edge("People $p",$node_name);
 	}
     }
 
-    $self->type1($type1);
-    $self->type2($type2);
-    return $self;
+    $self->_type1($type1);
+    return $type1;
 }
 
 # type3, directed people-to-people graph, in the given order
@@ -143,7 +164,7 @@ sub type3_adj_matrix {
 # Degree of seperation of two people.
 sub dos {
     my ($alice,$bob) = @_;
-    my $apsp = $self->graph_apsp;
+    my $apsp = $self->apsp;
     my $w = $apsp->path_length($alice,$bob);
     $w = -1 if(!defined $w);
     return $w;

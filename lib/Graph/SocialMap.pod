@@ -15,12 +15,12 @@ Graph::SocialMap - Easy tool to create social network map
     };
 
     # Generate a Graph::SocialMap object.
-    my $gsm = sm(-relation => $relation) ;
+    my $gsm = Graph::SocialMap->new(relation => $relation) ;
 
-    # Type 1 SocialMap (Graph::Direct object)
+    # Type 1 SocialMap
     my $graph_type1 = $gsm->type1;
 
-    # Type 2 SocialMap (Graph::Direct object)
+    # Type 2 SocialMap
     my $graph_type2 = $gsm->type2;
 
     # Save it with Graph::Writer::* module
@@ -46,10 +46,9 @@ This module implement a interesting graph application that is called
 the 'Social Relation Map'. It provides object-oriented way to retrieve
 many social information that can be found in this map.
 
-This module export a method 'sm' that return a B<Graph::SocialGraph>
-object. It accepts one argument in the for of 'hashref of arrayref'.
-The key to this hash is the name of relation, and the value
-of the hash is a list of identities involved in this relation.
+The C<new()> constructor accepts one argument in the for of 'hashref
+of arrayref'.  The key to this hash is the name of relation, and the
+value of the hash is a list of identities involved in this relation.
 
 Take the synopsis for an example, the structure:
 
@@ -67,6 +66,11 @@ and Peacock. By this 2 relations, we say that Marry is directly
 connected to Rose and Peacock, and Rose and Peacock are connected to
 each other indirectly, with degree of seperation 1. Likewise, Marry
 and Joan are connected to each other with degree of seperation 2.
+
+=head1 TODO
+
+So far the API really sucks, I will change them to be more canonical
+named.
 
 =head1 COPYRIGHT
 
