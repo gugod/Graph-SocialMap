@@ -62,7 +62,7 @@ and Joan are connected to each other with degree of seperation 2.
 use strict;
 use Spiffy '-Base';
 our @EXPORT = qw(sm);
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 use Graph;
 use Graph::Undirected;
 use Graph::Writer::GraphViz;
@@ -127,16 +127,26 @@ sub init_graph {
 	    $wg->add_weighted_edge($e->[1],1,$e->[0]);
 	}
     }
-    $ug->add_vertices(@$people);
+
     for my $i (@$people) {
-	$ug->set_attribute('shape',$i,'plaintext');
+	my $node_name = "People/$i";
+	my $label = "$i";
+
+	$ug->add_vertex($node_name);
+	$ug->set_attribute('shape',$node_name,'plaintext');
+	$ug->set_attribute('label',$node_name,$label);
     }
 
-    $ug->add_vertices(@$isu);
     for my $i (@$isu) {
-	$ug->set_attribute('shape',$i,'box');
+	my $node_name = "Relation/$i";
+	my $label = "$i";
+
+	$ug->add_vertex($node_name);
+	$ug->set_attribute('shape',$node_name,'box');
+	$ug->set_attribute('label',$node_name,$label);
+
 	for my $p (@{$rel->{$i}}) {
-	    $ug->add_edge($p,$i);
+	    $ug->add_edge("People/$p",$node_name);
 	}
     }
 
