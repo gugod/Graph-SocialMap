@@ -1,7 +1,8 @@
 package Graph::SocialMap;
 use Spiffy 0.21 qw(-Base field);
 use Graph 0.54;
-our $VERSION = '0.11';
+use Quantum::Superpositions;
+our $VERSION = '0.12';
 
 sub paired_arguments {qw(-relation -file -format)}
 
@@ -18,6 +19,7 @@ field '_type1';
 field '_type2';
 field '_type3';
 field '_apsp';
+field '_issue_network';
 
 # graphviz parameters
 field layout    => 'neato';
@@ -36,12 +38,10 @@ sub relation {
     my $newval = shift;
     if($newval) {
         $self->_relation($newval);
-        $self->_people(undef);
-        $self->_issues(undef);
-        $self->_type1(undef);
-        $self->_type2(undef);
-        $self->_type3(undef);
-        $self->_apsp(undef);
+        for(qw(_people _issues _type1 _type2 _type3 _apsp _wop
+                   _issue_network)) {
+            $self->$_(undef);
+        }
     }
     return $self->_relation;
 }
@@ -90,6 +90,22 @@ sub type2 {
     return $type2;
 }
 
+*people_network = \&type2;
+
+sub issue_network {
+    return $self->_issue_network if $self->_issue_network;
+    my $isu = $self->issues;
+    my $rel = $self->relation;
+    my $n = Graph::Undirected->new;
+    for my $i ($self->pairs(@$isu)) {
+        next if $n->has_edge($i->[0],$i->[1]);
+        $n->add_edge($i->[0],$i->[1])
+            if any(@{$rel->{$i->[0]}}) eq any(@{$rel->{$i->[1]}});
+    }
+    $self->_issue_network($n);
+    return $n;
+}
+
 sub apsp {
     return $self->_apsp if($self->_apsp);
     my $a = $self->type2->APSP_Floyd_Warshall;
@@ -99,36 +115,31 @@ sub apsp {
 
 sub type1 {
     return $self->_type1 if ($self->_type1);
-    my $type1 = Graph->new;
+    my $type1 = Graph::Undirected->new;
     my $people = $self->people;
     my $isu = $self->issues;
     my $rel = $self->relation;
 
-    for my $i (@$people) {
-	my $node_name = "People/$i";
-	my $label = "$i";
-
+    for (@$people) {
+	my $node_name = "People/$_";
 	$type1->add_vertex($node_name);
         $type1->set_vertex_attribute($node_name,shape => 'plaintext');
-        $type1->set_vertex_attribute($node_name,label => $label);
+        $type1->set_vertex_attribute($node_name,label => $_);
     }
 
     for my $i (@$isu) {
-	my $node_name = "Relation $i";
-	my $label = "$i";
-
+	my $node_name = "Issue/$i";
 	$type1->add_vertex($node_name);
         $type1->set_vertex_attribute($node_name, shape => "box");
-        $type1->set_vertex_attribute($node_name, label => $label);
-
-	for my $p (@{$rel->{$i}}) {
-	    $type1->add_edge("People $p",$node_name);
-	}
+        $type1->set_vertex_attribute($node_name, label => $i);
+	$type1->add_edge("People/$_",$node_name) for @{$rel->{$i}};
     }
 
     $self->_type1($type1);
     return $type1;
 }
+
+*affiliation_network = \&type1;
 
 # type3, directed people-to-people graph, in the given order
 sub type3 {

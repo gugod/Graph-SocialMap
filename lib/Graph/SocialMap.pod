@@ -7,25 +7,21 @@ Graph::SocialMap - Easy tool to create social network map
 
     # The Structure of relationship
     my $relation = {
-        1357 => [qw/Marry Rose/],
-        3579 => [qw/Marry Peacock/],
-        2468 => [qw/Joan/],
-        4680 => [qw/Rose Joan/],
-        OSSF => [qw/Gugod Autrijus/],
+        'WorkWith'  => [qw/Marry Rose/],
+        'ChatWith'  => [qw/Marry Peacock/],
+        'DanceWith' => [qw/Rose Joan/],
+        'HackWith'  => [qw/Gugod Autrijus/],
     };
 
     # Generate a Graph::SocialMap object.
     my $gsm = Graph::SocialMap->new(relation => $relation) ;
 
-    # Type 1 SocialMap
-    my $graph_type1 = $gsm->type1;
-
-    # Type 2 SocialMap
-    my $graph_type2 = $gsm->type2;
+    # People Network (Graph::Undirected object)
+    my $pn = $gsm->people_network;
 
     # Save it with Graph::Writer::* module
     my $writer = Graph::Writer::DGF->new();
-    $writer->write_graph($graph_type1,'type1.dgf');
+    $writer->write_graph($pn,'type1.dgf');
 
     # Weight of person (equal to the number of occurence)
     # Should be 2
@@ -53,28 +49,49 @@ value of the hash is a list of identities involved in this relation.
 Take the synopsis for an example, the structure:
 
     my $relation = {
-        1357 => [qw/Marry Rose/],
-        3579 => [qw/Marry Peacock/],
-        2468 => [qw/Joan/],
-        4680 => [qw/Rose Joan/],
-        OSSF => [qw/Gugod Autrijus/],
+        'WorkWith' => [qw/Marry Rose/],
+        'ChatWith' => [qw/Marry Peacock/],
+        'DanceWith' => [qw/Rose Joan/],
+        'HackWith' => [qw/Gugod Autrijus/],
     };
 
-Defines 6 relations which have common people involves in, the relation
-'1234' involves Marry and Rose, and the relation '3579' involves Marry
-and Peacock. By this 2 relations, we say that Marry is directly
+Defines 4 issues which have common people involves in, the relation
+'WorkWith' involves Marry and Rose, and the relation 'ChatWith' involves
+Marry and Peacock. By this 2 relations, we say that Marry is directly
 connected to Rose and Peacock, and Rose and Peacock are connected to
 each other indirectly, with degree of seperation 1. Likewise, Marry
 and Joan are connected to each other with degree of seperation 2.
 
-=head1 TODO
+=head1 METHODS
 
-So far the API really sucks, I will change them to be more canonical
-named.
+Once constructed, you may call the following object methods to
+retrieve further social network information.
+
+=over 4
+
+=item affiliation_network()
+
+Affiliation network -- directly construct a network from given
+issue-people relation. Returns a L<Graph::Undirected> object that is a
+bi-partie graph, one part of it present issues, the others are present
+people. Issue nodes and People nodes are connected if they are
+related.
+
+=item people_network()
+
+People network -- two people are connected if they are involed in at
+least one common issue. Return a L<Graph::Undirected> object.
+
+=item issue_network()
+
+Issue network -- two issues are connected if they involved at least
+one common person. Return a L<Graph::Undirected> object.
+
+=back
 
 =head1 COPYRIGHT
 
-Copyright 2004 by Kang-min Liu <gugod@gugod.org>.
+Copyright 2004,2005 by Kang-min Liu <gugod@gugod.org>.
 
 This program is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.

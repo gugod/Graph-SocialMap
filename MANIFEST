@@ -17,4 +17,6 @@ t/2.sub.t
 t/3.graph.t
 t/3.graph.type3.t
 t/4.graph-png.t
+t/5.issue_network.t
+t/6.affiliation_network.t
 t/graph.png
