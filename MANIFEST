@@ -6,6 +6,7 @@ META.yml
 README
 cpanfile
 lib/Graph/SocialMap.pm
+metamerge.json
 t/1.simple.t
 t/2.sub.t
 t/3.graph.t

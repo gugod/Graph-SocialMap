@@ -10,7 +10,7 @@
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
-      "version" : "2"
+      "version" : 2
    },
    "name" : "Graph-SocialMap",
    "prereqs" : {
@@ -47,7 +47,15 @@
       }
    },
    "release_status" : "stable",
+   "resources" : {
+      "repository" : {
+         "type" : "git",
+         "url" : "https://github.com/gugod/Graph-SocialMap.git",
+         "web" : "https://github.com/gugod/Graph-SocialMap"
+      }
+   },
    "version" : "0.12",
    "x_serialization_backend" : "JSON::PP version 4.07",
-   "x_spdx_expression" : "Artistic-1.0-Perl OR GPL-1.0-or-later"
+   "x_spdx_expression" : "Artistic-1.0-Perl OR GPL-1.0-or-later",
+   "x_static_install" : "1"
 }
