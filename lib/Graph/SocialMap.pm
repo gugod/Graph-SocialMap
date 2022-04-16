@@ -3,7 +3,7 @@ use Spiffy 0.21 qw(-Base field);
 use Graph 0.54;
 use Graph::Undirected;
 use Quantum::Superpositions;
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 
 sub paired_arguments {qw(-relation -file -format)}
 
